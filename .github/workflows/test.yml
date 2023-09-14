@@ -1,0 +1,98 @@
+name: Test Action
+
+on:
+  push:
+    branches:
+      - "main"
+    paths-ignore:
+      - "**.md"
+      - ".gitignore"
+  pull_request:
+    branches:
+      - "main"
+    paths-ignore:
+      - "**.md"
+      - ".gitignore"
+
+jobs:
+  check-dist:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          cache: npm
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build dist/ Directory
+        run: npm run package
+
+      - name: Compare Expected and Actual Directories
+        run: |
+          if [ "$(git diff --ignore-space-at-eol --text dist/ | wc -l)" -gt "0" ]; then
+            echo "Detected uncommitted changes after build. See status below:"
+            git diff --ignore-space-at-eol --text dist/
+            exit 1
+          fi
+
+  test-1:
+    name: Install AWS CLI
+    runs-on: ${{ matrix.os }}
+    needs: check-dist
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup aws
+        uses: ./
+        with:
+          aws-region: ap-south-1
+          role-to-assume: ${{ vars.GHA_AWS_ROLE }}
+
+      - name: Check aws version
+        run: aws --version
+
+  test-2:
+    name: Already installed
+    runs-on: ${{ matrix.os }}
+    needs: check-dist
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup aws
+        uses: ./
+        with:
+          aws-region: ap-south-1
+          role-to-assume: ${{ vars.GHA_AWS_ROLE }}
+
+      - name: Setup aws
+        uses: ./
+        with:
+          aws-region: ap-south-1
+          role-to-assume: ${{ vars.GHA_AWS_ROLE }}
+
+      - name: Check aws version
+        run: aws -version
