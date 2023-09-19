@@ -27033,13 +27033,13 @@ const core = __importStar(__nccwpck_require__(42186));
 const tc = __importStar(__nccwpck_require__(27784));
 const exec = __importStar(__nccwpck_require__(71514));
 const io = __importStar(__nccwpck_require__(47351));
-const node_process_1 = __nccwpck_require__(97742);
 const path = __importStar(__nccwpck_require__(71017));
+const node_process_1 = __nccwpck_require__(97742);
 const index_1 = __nccwpck_require__(63510);
 async function run() {
     const command = node_process_1.platform === `win32` ? `where` : `which`;
     const exitCode = await exec.exec(command, [`aws`], {
-        silent: false,
+        silent: true,
         ignoreReturnCode: true
     });
     if (exitCode == 0 && !core.getBooleanInput(`update-version`)) {
@@ -27049,32 +27049,26 @@ async function run() {
         switch (node_process_1.platform) {
             case `linux`:
             case `darwin`: {
-                const arch = {
+                const cliArch = {
                     x64: `x86_64`,
                     arm64: `aarch64`
                 };
-                const platform = {
-                    linux: `awscli-exe-linux-${arch[node_process_1.arch]}.zip`,
+                const cliPackage = {
+                    linux: `awscli-exe-linux`,
                     darwin: `AWSCLIV2.pkg`
                 };
-                const downloadedPath = await tc.downloadTool(`https://awscli.amazonaws.com/${platform[node_process_1.platform]}`, path.join(node_process_1.env.RUNNER_TEMP, platform[node_process_1.platform]));
+                const downloadedPath = await tc.downloadTool(`https://awscli.amazonaws.com/${cliPackage[node_process_1.platform]}${node_process_1.platform === `linux` ? `-${cliArch[node_process_1.arch]}.zip` : ``}`, path.join(node_process_1.env.RUNNER_TEMP, cliPackage[node_process_1.platform]));
                 const extractedPath = node_process_1.platform === `linux` ? await tc.extractZip(downloadedPath) : downloadedPath;
-                if (node_process_1.platform === `linux`) {
-                    await exec.exec(`sudo`, [`${extractedPath}/aws/install`, `--update`], {
-                        silent: true
-                    });
-                }
-                else if (node_process_1.platform === `darwin`) {
-                    await exec.exec(`sudo`, [`installer`, `-pkg`, extractedPath, `-target`, `/`], {
-                        silent: true
-                    });
-                }
+                const args = node_process_1.platform === `linux` ? [`${extractedPath}/aws/install`, `--update`] : [`installer`, `-pkg`, extractedPath, `-target`, `/`];
+                await exec.exec(`sudo`, args, {
+                    silent: true
+                });
                 await io.rmRF(downloadedPath);
                 await io.rmRF(extractedPath);
                 break;
             }
             case `win32`: {
-                await exec.exec(`msiexec.exe`, [`/a`, `/i`, `https://awscli.amazonaws.com/AWSCLIV2.msi`], {
+                await exec.exec(`msiexec`, [`/a`, `/i`, `https://awscli.amazonaws.com/AWSCLIV2.msi`], {
                     silent: false
                 });
                 break;
