@@ -1,0 +1,34 @@
+{
+  "name": "setup-aws",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/index.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "package": "(tsc node_modules/configure-aws-credentials/src/*.ts || true) && ncc build src/index.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/benzene-tech/setup-aws.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/benzene-tech/setup-aws/issues"
+  },
+  "homepage": "https://github.com/benzene-tech/setup-aws#readme",
+  "dependencies": {
+    "@actions/core": "^1.10.0",
+    "@actions/exec": "^1.1.1",
+    "@actions/github": "^5.1.1",
+    "@actions/io": "^1.1.3",
+    "@actions/tool-cache": "^2.0.1",
+    "configure-aws-credentials": "github:aws-actions/configure-aws-credentials#v4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.6.0",
+    "@vercel/ncc": "^0.38.0",
+    "typescript": "^5.2.2"
+  }
+}
