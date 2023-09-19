@@ -27037,8 +27037,7 @@ const path = __importStar(__nccwpck_require__(71017));
 const node_process_1 = __nccwpck_require__(97742);
 const index_1 = __nccwpck_require__(63510);
 async function run() {
-    const command = node_process_1.platform === `win32` ? `where` : `which`;
-    const exitCode = await exec.exec(command, [`aws`], {
+    const exitCode = await exec.exec(`which`, [`aws`], {
         silent: true,
         ignoreReturnCode: true
     });
@@ -27067,14 +27066,8 @@ async function run() {
                 await io.rmRF(extractedPath);
                 break;
             }
-            case `win32`: {
-                await exec.exec(`msiexec`, [`/a`, `/i`, `https://awscli.amazonaws.com/AWSCLIV2.msi`], {
-                    silent: false
-                });
-                break;
-            }
             default: {
-                throw new Error('Invalid platform');
+                throw new Error(`This action is currently not supported for ${node_process_1.platform}`);
             }
         }
     }

@@ -7,8 +7,7 @@ import {arch, env, platform} from 'node:process'
 import {run as awsCredentials} from "configure-aws-credentials/src/index"
 
 async function run() {
-    const command = platform === `win32` ? `where` : `which`
-    const exitCode = await exec.exec(command, [`aws`], {
+    const exitCode = await exec.exec(`which`, [`aws`], {
         silent: true,
         ignoreReturnCode: true
     })
@@ -40,15 +39,8 @@ async function run() {
 
                 break
             }
-            case `win32`: {
-                await exec.exec(`msiexec`, [`/a`, `/i`, `https://awscli.amazonaws.com/AWSCLIV2.msi`], {
-                    silent: false
-                })
-
-                break
-            }
             default: {
-                throw new Error('Invalid platform')
+                throw new Error(`This action is currently not supported for ${platform}`)
             }
         }
     }
