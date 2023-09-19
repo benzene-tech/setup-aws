@@ -70,10 +70,12 @@ inputs:
     description: Whether to update to latest version if already installed
     required: false
     default: 'false'
+  configure-aws-credentials:
+    description: Whether to configure AWS credentials
+    required: false
+    default: 'true'
 
 outputs:
-  path:
-    description: Path to AWS CLI
   aws-account-id:
     description: The AWS account ID for the provided credentials
   aws-access-key-id:

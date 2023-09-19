@@ -57,11 +57,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Remove AWS CLI if already exists in linux or mac
+        if: runner.os != 'Windows'
+        run: rm -rf "/usr/local/bin/aws"
+
+      - name: Remove AWS CLI if already exists in windows
+        if: runner.os == 'Windows'
+        run: del "C:\Program Files\Amazon\AWSCLIV2\aws.exe"
+
       - name: Setup aws
         uses: ./
         with:
           aws-region: ap-south-1
-          role-to-assume: ${{ vars.GHA_AWS_ROLE }}
+          configure-aws-credentials: false
 
       - name: Check aws version
         run: aws --version
@@ -82,17 +90,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup aws
-        uses: ./
-        with:
-          aws-region: ap-south-1
-          role-to-assume: ${{ vars.GHA_AWS_ROLE }}
+      - name: Remove AWS CLI if already exists in linux or mac
+        if: runner.os != 'Windows'
+        run: rm -rf "/usr/local/bin/aws"
+
+      - name: Remove AWS CLI if already exists in windows
+        if: runner.os == 'Windows'
+        run: del "C:\Program Files\Amazon\AWSCLIV2\aws.exe"
 
       - name: Setup aws
         uses: ./
         with:
           aws-region: ap-south-1
-          role-to-assume: ${{ vars.GHA_AWS_ROLE }}
+          configure-aws-credentials: false
+
+      - name: Setup aws
+        uses: ./
+        with:
+          aws-region: ap-south-1
+          configure-aws-credentials: false
 
       - name: Check aws version
-        run: aws -version
+        run: aws --version

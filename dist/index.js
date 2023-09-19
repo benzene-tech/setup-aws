@@ -27033,61 +27033,59 @@ const core = __importStar(__nccwpck_require__(42186));
 const tc = __importStar(__nccwpck_require__(27784));
 const exec = __importStar(__nccwpck_require__(71514));
 const io = __importStar(__nccwpck_require__(47351));
+const node_process_1 = __nccwpck_require__(97742);
+const path = __importStar(__nccwpck_require__(71017));
 const index_1 = __nccwpck_require__(63510);
 async function run() {
-    const version = `v2`;
-    const awsPath = tc.find(`AWS`, version);
-    if (awsPath !== `` && !core.getBooleanInput(`update-version`)) {
-        core.notice(`AWS CLI with ${version} already installed`);
-        core.addPath(awsPath);
-        (0, index_1.run)().catch(error => {
-            core.setFailed(error);
-        });
-        return;
+    const command = node_process_1.platform === `win32` ? `where` : `which`;
+    const exitCode = await exec.exec(command, [`aws`], {
+        silent: false,
+        ignoreReturnCode: true
+    });
+    if (exitCode == 0 && !core.getBooleanInput(`update-version`)) {
+        core.notice(`AWS CLI already exits`);
     }
-    let cachedPath = ``;
-    switch (process.platform) {
-        case `linux` || 0: {
-            const arch = {
-                x64: `x86_64`,
-                arm64: `aarch64`
-            };
-            const platform = {
-                linux: `awscli-exe-linux-${arch[process.arch]}.zip`,
-                darwin: `AWSCLIV2.pkg`
-            };
-            const pathToCLI = await tc.downloadTool(`https://awscli.amazonaws.com/${platform[process.platform]}`);
-            const extractedPathToCLI = await (async (path) => {
-                switch (process.platform) {
-                    case `linux`: {
-                        return await tc.extractZip(path);
-                    }
-                    case `darwin`: {
-                        return await tc.extractXar(path);
-                    }
+    else {
+        switch (node_process_1.platform) {
+            case `linux`:
+            case `darwin`: {
+                const arch = {
+                    x64: `x86_64`,
+                    arm64: `aarch64`
+                };
+                const platform = {
+                    linux: `awscli-exe-linux-${arch[node_process_1.arch]}.zip`,
+                    darwin: `AWSCLIV2.pkg`
+                };
+                const downloadedPath = await tc.downloadTool(`https://awscli.amazonaws.com/${platform[node_process_1.platform]}`, path.join(node_process_1.env.RUNNER_TEMP, platform[node_process_1.platform]));
+                const extractedPath = node_process_1.platform === `linux` ? await tc.extractZip(downloadedPath) : downloadedPath;
+                if (node_process_1.platform === `linux`) {
+                    await exec.exec(`sudo`, [`${extractedPath}/aws/install`, `--update`], {
+                        silent: true
+                    });
                 }
-            })(pathToCLI);
-            await exec.exec(`sudo`, [`${extractedPathToCLI}/aws/install`], {
-                silent: true
-            });
-            cachedPath = await tc.cacheFile(pathToCLI, `/usr/local/bin/aws`, `AWS`, version);
-            await io.rmRF(pathToCLI);
-            await io.rmRF(extractedPathToCLI);
-            await io.rmRF(`/usr/local/bin/aws`);
-            break;
-        }
-        case `win32`: {
-            const pathToCLI = await tc.downloadTool(`https://awscli.amazonaws.com/AWSCLIV2.msi`);
-            await exec.exec(`msiexec.exe`, [`/i`, pathToCLI, `TARGETDIR="${core.toPlatformPath(`${pathToCLI}/..`)}"`], {
-                silent: true
-            });
-            cachedPath = await tc.cacheFile(pathToCLI, `${core.toPlatformPath(`${pathToCLI}/..`)}/aws.exe`, `AWS`, version);
-            break;
+                else if (node_process_1.platform === `darwin`) {
+                    await exec.exec(`sudo`, [`installer`, `-pkg`, extractedPath, `-target`, `/`], {
+                        silent: true
+                    });
+                }
+                await io.rmRF(downloadedPath);
+                await io.rmRF(extractedPath);
+                break;
+            }
+            case `win32`: {
+                await exec.exec(`msiexec.exe`, [`/a`, `/i`, `https://awscli.amazonaws.com/AWSCLIV2.msi`], {
+                    silent: false
+                });
+                break;
+            }
+            default: {
+                throw new Error('Invalid platform');
+            }
         }
     }
-    core.addPath(cachedPath);
-    core.setOutput(`path`, cachedPath);
-    (0, index_1.run)().catch(error => {
+    const configureAWSCredentials = core.getBooleanInput(`configure-aws-credentials`);
+    !configureAWSCredentials || (0, index_1.run)().catch(error => {
         core.setFailed(error);
     });
 }
@@ -27193,6 +27191,14 @@ module.exports = require("https");
 
 "use strict";
 module.exports = require("net");
+
+/***/ }),
+
+/***/ 97742:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("node:process");
 
 /***/ }),
 

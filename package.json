@@ -7,9 +7,6 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "package": "(tsc node_modules/configure-aws-credentials/src/*.ts || true) && ncc build src/index.ts"
   },
-  "bin": {
-    "aws": "src/wrapper/dist/index.js"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/benzene-tech/setup-aws.git"

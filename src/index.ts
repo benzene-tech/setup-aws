@@ -2,73 +2,64 @@ import * as core from "@actions/core"
 import * as tc from "@actions/tool-cache"
 import * as exec from "@actions/exec"
 import * as io from "@actions/io"
-import {run as awsCredentials} from "configure-aws-credentials/src/index";
+import {arch as ARCH, env, platform as PLATFORM} from 'node:process'
+import * as path from 'path'
+import {run as awsCredentials} from "configure-aws-credentials/src/index"
 
 async function run() {
-    const version = `v2`
+    const command = PLATFORM === `win32` ? `where` : `which`
+    const exitCode = await exec.exec(command, [`aws`], {
+        silent: false,
+        ignoreReturnCode: true
+    })
 
-    const awsPath = tc.find(`AWS`, version)
-    if (awsPath !== `` && !core.getBooleanInput(`update-version`)) {
-        core.notice(`AWS CLI with ${version} already installed`)
-        core.addPath(awsPath)
-
-        awsCredentials().catch(error => {
-            core.setFailed(error)
-        })
-
-        return
-    }
-
-    let cachedPath: string = ``
-    switch (process.platform) {
-        case `linux` || `darwin`: {
-            const arch = {
-                x64: `x86_64`,
-                arm64: `aarch64`
-            }
-            const platform = {
-                linux: `awscli-exe-linux-${arch[process.arch as keyof Object]}.zip`,
-                darwin: `AWSCLIV2.pkg`
-            }
-
-            const pathToCLI = await tc.downloadTool(`https://awscli.amazonaws.com/${platform[process.platform as keyof Object]}`)
-            const extractedPathToCLI = await (async (path: string) => {
-                switch (process.platform) {
-                    case `linux`: {
-                        return await tc.extractZip(path);
-                    }
-                    case `darwin`: {
-                        return await tc.extractXar(path);
-                    }
+    if (exitCode == 0 && !core.getBooleanInput(`update-version`)) {
+        core.notice(`AWS CLI already exits`)
+    } else {
+        switch (PLATFORM) {
+            case `linux`:
+            case `darwin`: {
+                const arch = {
+                    x64: `x86_64`,
+                    arm64: `aarch64`
                 }
-            })(pathToCLI)
-            await exec.exec(`sudo`, [`${extractedPathToCLI}/aws/install`], {
-                silent: true
-            })
-            cachedPath = await tc.cacheFile(pathToCLI, `/usr/local/bin/aws`, `AWS`, version)
+                const platform = {
+                    linux: `awscli-exe-linux-${arch[ARCH as keyof Object]}.zip`,
+                    darwin: `AWSCLIV2.pkg`
+                }
 
-            await io.rmRF(pathToCLI)
-            await io.rmRF(extractedPathToCLI!)
-            await io.rmRF(`/usr/local/bin/aws`)
+                const downloadedPath = await tc.downloadTool(`https://awscli.amazonaws.com/${platform[PLATFORM]}`, path.join(env.RUNNER_TEMP!, platform[PLATFORM]))
+                const extractedPath = PLATFORM === `linux` ? await tc.extractZip(downloadedPath) : downloadedPath
+                if (PLATFORM === `linux`) {
+                    await exec.exec(`sudo`, [`${extractedPath}/aws/install`, `--update`], {
+                        silent: true
+                    })
+                } else if (PLATFORM === `darwin`) {
+                    await exec.exec(`sudo`, [`installer`, `-pkg`, extractedPath, `-target`, `/`], {
+                        silent: true
+                    })
+                }
 
-            break
-        }
-        case `win32`: {
-            const pathToCLI = await tc.downloadTool(`https://awscli.amazonaws.com/AWSCLIV2.msi`)
-            await exec.exec(`msiexec.exe`, [`/i`, pathToCLI, `TARGETDIR="${core.toPlatformPath(`${pathToCLI}/..`)}"`], {
-                silent: true
-            })
-            cachedPath = await tc.cacheFile(pathToCLI, `${core.toPlatformPath(`${pathToCLI}/..`)}/aws.exe`, `AWS`, version)
+                await io.rmRF(downloadedPath)
+                await io.rmRF(extractedPath)
 
-            break
+                break
+            }
+            case `win32`: {
+                await exec.exec(`msiexec.exe`, [`/a`, `/i`, `https://awscli.amazonaws.com/AWSCLIV2.msi`], {
+                    silent: false
+                })
+
+                break
+            }
+            default: {
+                throw new Error('Invalid platform')
+            }
         }
     }
 
-    core.addPath(cachedPath)
-
-    core.setOutput(`path`, cachedPath)
-
-    awsCredentials().catch(error => {
+    const configureAWSCredentials = core.getBooleanInput(`configure-aws-credentials`)
+    !configureAWSCredentials || awsCredentials().catch(error => {
         core.setFailed(error)
     })
 }
