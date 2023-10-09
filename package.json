@@ -24,7 +24,7 @@
     "@actions/github": "^5.1.1",
     "@actions/io": "^1.1.3",
     "@actions/tool-cache": "^2.0.1",
-    "configure-aws-credentials": "github:aws-actions/configure-aws-credentials#v4"
+    "configure-aws-credentials": "github:aws-actions/configure-aws-credentials#v4.0.1"
   },
   "devDependencies": {
     "@types/node": "^20.6.5",
