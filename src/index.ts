@@ -7,7 +7,8 @@ import {arch, env, platform} from 'node:process'
 import {run as awsCredentials} from "configure-aws-credentials/src/index"
 
 async function run() {
-    const exitCode = await exec.exec(`which`, [`aws`], {
+    const command = platform === `win32` ? `where` : `which`
+    const exitCode = await exec.exec(command, [`aws`], {
         silent: true,
         ignoreReturnCode: true
     })
@@ -36,6 +37,13 @@ async function run() {
 
                 await io.rmRF(downloadedPath)
                 await io.rmRF(extractedPath)
+
+                break
+            }
+            case `win32`: {
+                await exec.exec(`msiexec`, [`/a`, `/i`, `https://awscli.amazonaws.com/AWSCLIV2.msi`], {
+                    silent: false
+                })
 
                 break
             }
