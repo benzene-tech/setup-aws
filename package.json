@@ -27,7 +27,7 @@
     "configure-aws-credentials": "github:aws-actions/configure-aws-credentials#v4"
   },
   "devDependencies": {
-    "@types/node": "^20.6.5",
+    "@types/node": "^20.14.8",
     "@vercel/ncc": "^0.38.0",
     "typescript": "^5.2.2"
   }
